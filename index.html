@@ -220,6 +220,11 @@
     text-decoration:underline;
     padding:6px 0;
   }
+  .link-btn.danger{
+    color:#C96B62;
+    display:block;
+    margin-top:4px;
+  }
 
   footer{
     margin-top:56px;
@@ -322,7 +327,7 @@
 // ======= CONFIGURACIÓN =======
 // Pega aquí la URL de tu aplicación web de Google Apps Script
 // (la que copias al desplegarla). Ver instrucciones que te di aparte.
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwR5wPQd1XhsCZcyD5d5dWJ_e_u6_8r1cH9Nc6Z2xImsYLqAHWV9ly3BRwSQovmcUZ3yg/exec";
+const SCRIPT_URL = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT";
 
 const ADMIN_PIN = "nivela2026"; // debe coincidir con el PIN del archivo Code.gs
 
@@ -339,7 +344,7 @@ const nameInput = document.getElementById('nameInput');
 const charHint = document.getElementById('charHint');
 const submitBtn = document.getElementById('submitBtn');
 
-if(SCRIPT_URL.indexOf('PEGA_AQUI') !== -1){
+if(SCRIPT_URL.indexOf('https://script.google.com/macros/s/AKfycbwR5wPQd1XhsCZcyD5d5dWJ_e_u6_8r1cH9Nc6Z2xImsYLqAHWV9ly3BRwSQovmcUZ3yg/exec') !== -1){
   setupWarning.innerHTML = '<div class="setup-warning">Falta conectar el backend: reemplaza <code>SCRIPT_URL</code> en el código de esta página con la URL de tu aplicación web de Google Apps Script.</div>';
 }
 
@@ -441,6 +446,10 @@ function cardHtml(item){
     `;
   }
 
+  if(isAdmin){
+    html += `<button class="link-btn danger" data-action="delete" data-id="${item.id}">Eliminar sugerencia</button>`;
+  }
+
   html += `</div>`;
   return html;
 }
@@ -475,6 +484,25 @@ function attachCardEvents(){
   listContainer.querySelectorAll('[data-action="save-reply"]').forEach(btn => {
     btn.addEventListener('click', () => saveReply(btn.dataset.id));
   });
+  listContainer.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', () => deleteSuggestion(btn.dataset.id));
+  });
+}
+
+async function deleteSuggestion(id){
+  const item = suggestions.find(s => s.id === id);
+  const preview = item ? item.message.slice(0, 60) : '';
+  const sure = confirm('¿Eliminar esta sugerencia?\n\n"' + preview + (preview.length === 60 ? '…' : '') + '"\n\nEsta acción no se puede deshacer.');
+  if(!sure) return;
+  clearError();
+  try{
+    const data = await callApi({ action: 'delete', id: id, pin: ADMIN_PIN });
+    if(!data.ok) throw new Error(data.error || 'error');
+    suggestions = await loadAll();
+    render();
+  }catch(e){
+    showError('No se pudo eliminar la sugerencia. Intenta de nuevo.');
+  }
 }
 
 async function saveReply(id){
